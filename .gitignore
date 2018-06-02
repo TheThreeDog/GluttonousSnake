@@ -116,3 +116,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# custom
+build-Snake-Desktop_Qt_5_7_0_MinGW_32bit-Debug/
+.idea/
+*.user
