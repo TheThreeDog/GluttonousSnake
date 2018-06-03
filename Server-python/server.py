@@ -29,7 +29,7 @@ class SnakeThread(threading.Thread,object):
         SnakeThread.snake_id += 1
         self.snake['id'] = SnakeThread.snake_id
         SnakeThread.snakes[SnakeThread.snake_id] = self.snake
-        self.sock.send(str({"snake_id": SnakeThread.snake_id}).encode())
+        self.sock.send(str({"snake_id": SnakeThread.snake_id,"replay":"join successful"}).encode(encoding='utf-8'))
 
     def recv_data(self):
         while True:

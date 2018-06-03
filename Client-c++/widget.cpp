@@ -5,21 +5,12 @@ Widget::Widget(QWidget *parent)
 {
     //重设主窗体大小。
     this->move(0,0);
-    this->resize(1000,760);
+    this->resize(1200,660);
     this->speed = 20;
-
-//    this->setWindowFlags(
-//      Qt::FramelessWindowHint
-//      |
-//      Qt::WindowMinimizeButtonHint
-//      );
-//    this->setAttribute
-//      (Qt::WA_TranslucentBackground);
-
 
     snake = new Snake(this);
     isTimerStart = false;
-    //开启一个定时器，每隔100毫秒执行一次timerEvent（）；
+    //开启一个定时器，每隔speed毫秒执行一次timerEvent（）；
     timerID = this->startTimer(speed);
     isTimerStart = true;
     createFood();
@@ -27,6 +18,10 @@ Widget::Widget(QWidget *parent)
     SnakeThread * st = new SnakeThread(this);
     threads.append(st);
     st->start();
+
+    NetWork * network = new NetWork(this);
+    network->startup();
+
 }
 
 void Widget::die()
@@ -69,7 +64,7 @@ void Widget::eatOrDeath()
         //QMessageBox::information("游戏结束",this);
         die();
     }
-        //蛇头的坐标有没有超过窗体边界
+    //蛇头的坐标有没有超过窗体边界
     // 判断有没有撞到其他蛇
     foreach(SnakeThread *snakeThread,this->threads){
         Snake * snake = snakeThread->getSnake();
@@ -80,21 +75,21 @@ void Widget::eatOrDeath()
         }
     }
     //判断有没有自杀
-        //遍历每一个蛇身，如果有蛇身的坐标和蛇头重合，说明自杀
+    //遍历每一个蛇身，如果有蛇身的坐标和蛇头重合，说明自杀
     for(int i = 1;i < snake->getSnake().count();i++){
         if(snake->getSnake().at(i)->pos() == head->pos()){
             die();
         }
     }
     //判断有没有吃到食物
-        //校验蛇头和食物坐标，是否重合，
+    //校验蛇头和食物坐标，是否重合，
     if(food->pos() == head->pos()){
         snake->addLength();
         delete food;
         food = NULL;
         this->createFood();
     }
-            //如果重合  addLength()；把当前食物删掉，生成新的食物
+    //如果重合  addLength()；把当前食物删掉，生成新的食物
     //如果没重合，返回即可。
 }
 
@@ -113,9 +108,9 @@ void Widget::keyPressEvent(QKeyEvent *event)
     //event->key();就是我们输入的按键
     switch(event->key()){
     case Qt::Key_Up :
-    //向上移动
+        //向上移动
         snake->setDirection(Snake::UP);
-    break;
+        break;
     case Qt::Key_Down:
         snake->setDirection(Snake::DOWN);
         break;
@@ -140,24 +135,34 @@ void Widget::keyPressEvent(QKeyEvent *event)
         }
         break;
     case Qt::Key_1:
-        this->speed = 1000;
-        this->restartTimer();
+        if(isTimerStart){
+            this->speed = 1000;
+            this->restartTimer();
+        }
         break;
     case Qt::Key_2:
+        if(isTimerStart){
             this->speed = 500;
             this->restartTimer();
+        }
         break;
     case Qt::Key_3:
+        if(isTimerStart){
             this->speed = 200;
             this->restartTimer();
+        }
         break;
     case Qt::Key_4:
+        if(isTimerStart){
             this->speed = 100;
             this->restartTimer();
+        }
         break;
     case Qt::Key_5:
-        this->speed = 20;
-        this->restartTimer();
+        if(isTimerStart){
+            this->speed = 20;
+            this->restartTimer();
+        }
         break;
     default:
         event->ignore();

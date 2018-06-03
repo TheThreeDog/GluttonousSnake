@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -16,9 +16,13 @@ SOURCES += main.cpp\
         widget.cpp \
     snakebody.cpp \
     snake.cpp \
-    snakethread.cpp
+    snakethread.cpp \
+    network.cpp
 
 HEADERS  += widget.h \
     snakebody.h \
     snake.h \
-    snakethread.h
+    snakethread.h \
+    network.h
+
+#include(NetPacket/NetPacket.pri)

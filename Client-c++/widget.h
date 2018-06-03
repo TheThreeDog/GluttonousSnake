@@ -6,6 +6,7 @@
 #include <QKeyEvent>
 #include <QTimerEvent>
 #include "snakethread.h"
+#include "network.h"
 
 class Widget : public QWidget
 {
@@ -25,7 +26,8 @@ protected:
     void timerEvent(QTimerEvent *event);
 private:
     Snake* snake;
-    int timerID;   //定时器的标识符
+    int timerID;    //定时器的标识符
+    int snakeId;    //蛇自己的ID
     bool isTimerStart;
     SnakeBody * food;//食物
     int speed;
