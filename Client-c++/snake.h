@@ -30,7 +30,10 @@ public:
     void setSnakeName(const QString name);
     //获取蛇名
     QString getSnakeName();
-
+    //设置速度
+    void setSpeed(const int speed);
+    //获取速度
+    int getSpeed();
 signals:
 
 public slots:
@@ -40,6 +43,7 @@ private:
     DIRECTION dir ;
     QVector<SnakeBody *> snake_body;
     QLabel * nameLabel;
+    int speed;
 
 };
 

@@ -14,13 +14,23 @@ SnakeThread::SnakeThread(QWidget *w, QObject *parent)
     this->mainWindow = w;
     this->snake = new Snake(mainWindow);
     snake->getHead()->move(200,500);
-    timerId = this->startTimer(100);
+    timerId = this->startTimer(snake->getSpeed());
     this->flag = 80;
 }
 
 Snake *SnakeThread::getSnake()
 {
     return this->snake;
+}
+
+void SnakeThread::setSpeed(const int s)
+{
+    this->snake->setSpeed(s);
+}
+
+int SnakeThread::getSpeed()
+{
+    return this->snake->getSpeed();
 }
 
 SnakeThread::~SnakeThread()
@@ -56,5 +66,4 @@ void SnakeThread::timerEvent(QTimerEvent *e)
         if(flag == 0)
             flag = 80;
     }
-//    eatOrDeath();
 }

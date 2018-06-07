@@ -19,6 +19,8 @@ class SnakeThread:public QThread
 public:
     SnakeThread(QWidget * w,QObject * parent = 0);
     Snake * getSnake();
+    void setSpeed(const int s);
+    int getSpeed();
     ~SnakeThread();
 protected:
     void run();

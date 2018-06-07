@@ -5,6 +5,7 @@ import socket
 import threading
 import time
 import json
+import random
 
 HOST = ''
 PORT = 10001
@@ -28,8 +29,14 @@ class SnakeThread(threading.Thread,object):
         SnakeThread.snake_num += 1
         SnakeThread.snake_id += 1
         self.snake['id'] = SnakeThread.snake_id
+        self.snake['']
         SnakeThread.snakes[SnakeThread.snake_id] = self.snake
-        self.sock.send(str({"snake_id": SnakeThread.snake_id,"replay":"join successful"}).encode(encoding='utf-8'))
+        self.sock.sendall(json.dumps({"snake_id": SnakeThread.snake_id,"msg":"join successful","snake_num":SnakeThread.snake_num}).encode())
+
+    def send_msg(self,msg):
+        for sock in SnakeThread.socks:
+            # print(str(time.time())+"  :  "+str(msg))
+            sock.sendall(json.dumps(msg).encode())
 
     def recv_data(self):
         while True:
@@ -38,12 +45,18 @@ class SnakeThread(threading.Thread,object):
                 break
             print(data.decode())
             data = eval(data.decode())
-            self.snake['direction'] = data['direction']
-            self.snake['name'] = data['name']
-            self.snake['speed'] = data['speed']
-            for sock in SnakeThread.socks:
-                # print(str(time.time())+"  :  "+str(SnakeThread.snakes))
-                sock.sendall(str(self.snake).encode())
+            print(data)
+            if data['msg'] == "createFood":
+                # 随机生成一个食物，广播给所有蛇
+                res = {}
+                res['x'] = random.randint(0,59) * 20
+                res['y'] = random.randint(0,32) * 20
+                res['msg'] = 'createFood'
+                self.send_msg(res)
+            # self.snake['direction'] = data['direction']
+            # self.snake['name'] = data['name']
+            # self.snake['speed'] = data['speed']
+
 
     def delete_snake(self):
         self.sock.close()

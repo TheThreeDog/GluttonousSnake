@@ -7,20 +7,24 @@ Widget::Widget(QWidget *parent)
     this->move(0,0);
     this->resize(1200,660);
     this->speed = 20;
+    this->snakeId = 0;
 
     snake = new Snake(this);
     isTimerStart = false;
     //开启一个定时器，每隔speed毫秒执行一次timerEvent（）；
     timerID = this->startTimer(speed);
     isTimerStart = true;
-    createFood();
+//    createFood();
+    this->food = NULL;
 
     SnakeThread * st = new SnakeThread(this);
     threads.append(st);
     st->start();
 
-    NetWork * network = new NetWork(this);
-    network->startup();
+    // 启动网络、网络收到的数据，在主类中处理
+    m_pNetWork = new NetWork(this);
+    connect(m_pNetWork,SIGNAL(sig_socketReceived(QJsonObject)),this,SLOT(slot_receiveData(QJsonObject)));
+    m_pNetWork->startup();
 
 }
 
@@ -30,21 +34,10 @@ void Widget::die()
     isTimerStart = false;
 }
 
-void Widget::createFood()
+void Widget::createFood(int x, int y)
 {
-    //配置随机数的种子
-    srand((unsigned)time(NULL));
-    //随机生成食物的位置
-    int x = rand()%50*20;
-    int y = rand()%35*20;
-    //通过我们计算出的随机数生成坐标
-    QPoint p(x,y);
-    //检验食物不能生成在蛇头上。
-    if(p == snake->getSnake().at(0)->pos()){
-        x = rand()%50*20;
-        y = rand()%35*20;
-    }
-    //通过随机坐标生成食物。
+    qDebug()<<"create food !";
+    //通过从网络收到的坐标生成食物。
     food = new SnakeBody(this);
     //把食物移动到我们生成的坐标上。
     food->move(x,y);
@@ -83,11 +76,14 @@ void Widget::eatOrDeath()
     }
     //判断有没有吃到食物
     //校验蛇头和食物坐标，是否重合，
-    if(food->pos() == head->pos()){
+    if( food != NULL && food->pos() == head->pos()){
         snake->addLength();
         delete food;
         food = NULL;
-        this->createFood();
+//        this->createFood();
+        QJsonObject jsonObj;
+        jsonObj.insert("msg","createFood");
+        this->m_pNetWork->slot_socketSend(jsonObj);
     }
     //如果重合  addLength()；把当前食物删掉，生成新的食物
     //如果没重合，返回即可。
@@ -176,7 +172,37 @@ void Widget::timerEvent(QTimerEvent *event)
     eatOrDeath();
 }
 
+void Widget::closeEvent(QCloseEvent *)
+{
+    this->m_pNetWork->disconnect();
+}
+
 Widget::~Widget()
 {
 
+}
+
+//接收到数据的处理
+void Widget::slot_receiveData(QJsonObject jsonObj)
+{
+    qDebug()<<"receive data!";
+    QString msg = jsonObj.value("msg").toString();
+    //加入成功
+    if(msg == "join successful"){
+        int id = jsonObj.value("snake_id").toInt();
+        int snakeNum = jsonObj.value("snake_num").toInt();
+        this-> snakeId = id;
+        if(snakeNum == 1){
+            //如果这是第一条蛇，先生成一个食物
+            //就去请求一个食物
+            QJsonObject jsonObj;
+            jsonObj.insert("msg","createFood");
+            this->m_pNetWork->slot_socketSend(jsonObj);
+        }
+    }
+    if(msg == "createFood"){
+        int x = jsonObj.value("x").toInt();
+        int y = jsonObj.value("y").toInt();
+        this->createFood(x,y);
+    }
 }

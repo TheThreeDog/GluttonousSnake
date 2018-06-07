@@ -36,10 +36,11 @@ void NetWork::stop()
     m_pTcpSocket->disconnectFromHost();
 }
 
-void NetWork::slot_socketSend(const QByteArray &byteData)
+void NetWork::slot_socketSend(const QJsonObject &jsonData)
 {
     static QMutex mutex;
     QMutexLocker locker(&mutex);
+    QByteArray byteData = QJsonDocument(jsonData).toJson();
 
     if(m_pTcpSocket->isOpen()){
         //        m_pTcpSocket->write(QByteArray::number(byteData.size()),sizeof(qint64));
@@ -53,19 +54,20 @@ void NetWork::slot_socketRead()
     static QMutex mutex;
     QMutexLocker locker(&mutex);
 
-    static qint64 size = 0;
-//    while(1){
+//    static qint64 size = 0;
+    while(1){
         QByteArray data = m_pTcpSocket->readAll();
         qDebug()<<data;
         QJsonParseError json_error;
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data,&json_error);
-        if(json_error.error != QJsonParseError::NoError)
+        if(jsonDoc.isNull())
         {
             qDebug()<<json_error.errorString();
+            continue;
         }
-        qDebug()<<jsonDoc;
         QJsonObject jsonObj = jsonDoc.object();
-        qDebug()<<jsonObj;
+        emit sig_socketReceived(jsonObj);
+        break;
         /*
         if(size == 0){
             if(m_pTcpSocket->bytesAvailable() < sizeof(qint64))
@@ -81,5 +83,5 @@ void NetWork::slot_socketRead()
             emit sig_socketReceived(dt);
         }
         */
-//    }
+    }
 }

@@ -16,6 +16,7 @@ SnakeBody::SnakeBody(QWidget *parent)
     //把前节点置空
     previousBody = NULL;
     this->show();
+    this->move(200,200);
 }
 
 //生成蛇身的构造函数

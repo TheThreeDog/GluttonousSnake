@@ -9,6 +9,7 @@ Snake::Snake(QWidget *parent)
     this->addLength();
     this->addLength();
     this->addLength();
+    speed = 500;
 }
 
 void Snake::setHead(SnakeBody *s)
@@ -81,7 +82,7 @@ void Snake::addLength()
         //生成的蛇头
         SnakeBody * h = new SnakeBody(p);
         //蛇头默认生成在屏幕中间的位置
-        h->move(200,200);
+//        h->move(200,200);
         //把此节点加入到蛇身数组里
         snake_body.append(h);
         //生成后要生成蛇名对应的文字
@@ -110,6 +111,16 @@ void Snake::setSnakeName(const QString name)
 QString Snake::getSnakeName()
 {
     return this->nameLabel->text();
+}
+
+void Snake::setSpeed(const int speed)
+{
+    this->speed = speed;
+}
+
+int Snake::getSpeed()
+{
+    return this->speed;
 }
 
 

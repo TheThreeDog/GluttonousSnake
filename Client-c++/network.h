@@ -29,7 +29,7 @@ signals:
     void sig_socketReceived(const QJsonObject jsonData);//收到数据发送信号，将数据内容通过信号发送
 
 public slots:
-    void slot_socketSend(const QByteArray &byteData);//发送数据的槽函数
+    void slot_socketSend(const QJsonObject &jsonData);//发送数据的槽函数
 
 private:
     QTcpSocket *m_pTcpSocket;
