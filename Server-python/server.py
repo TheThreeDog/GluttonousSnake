@@ -9,7 +9,9 @@ import random
 
 HOST = ''
 PORT = 10001
-
+BODY_SIZE = 20
+WIDTH = 1200//20
+HEIGHT = 660//20
 
 # 创建蛇线程
 class SnakeThread(threading.Thread,object):
@@ -29,13 +31,26 @@ class SnakeThread(threading.Thread,object):
         SnakeThread.snake_num += 1
         SnakeThread.snake_id += 1
         self.snake['id'] = SnakeThread.snake_id
-        self.snake['']
+        self.snake['x'] = random.randint(20,WIDTH-20) * BODY_SIZE
+        self.snake['y'] = random.randint(10,HEIGHT-10) * BODY_SIZE
+        self.snake['direction'] = random.randint(0,3)
+        self.snake['length'] = 4
+        self.snake['speed'] = 500
+        self.snake['name'] = '三级狗'
         SnakeThread.snakes[SnakeThread.snake_id] = self.snake
-        self.sock.sendall(json.dumps({"snake_id": SnakeThread.snake_id,"msg":"join successful","snake_num":SnakeThread.snake_num}).encode())
+        self.sock.sendall(json.dumps({"snake": self.snake,"msg":"join successful","snake_num":SnakeThread.snake_num}).encode())
+        self.send_msg_without_self({"msg":"new snake","snake":self.snake})
 
     def send_msg(self,msg):
         for sock in SnakeThread.socks:
             # print(str(time.time())+"  :  "+str(msg))
+            sock.sendall(json.dumps(msg).encode())
+
+    def send_msg_without_self(self,msg):
+        for sock in SnakeThread.socks:
+            # print(str(time.time())+"  :  "+str(msg))
+            if sock == self.sock:
+                continue
             sock.sendall(json.dumps(msg).encode())
 
     def recv_data(self):
@@ -46,11 +61,23 @@ class SnakeThread(threading.Thread,object):
             print(data.decode())
             data = eval(data.decode())
             print(data)
+            if data['msg'] == "eatFood":
+                # 给其他蛇发送蛇加长的消息
+                res_all = {}
+                res_all['msg'] = 'addLength'
+                res_all['id'] =data['id']
+                self.send_msg_without_self(res_all)
+                # 随机生成一个食物，广播给所有蛇
+                res = {}
+                res['x'] = random.randint(0,WIDTH-1) * BODY_SIZE
+                res['y'] = random.randint(0,HEIGHT-1) * BODY_SIZE
+                res['msg'] = 'createFood'
+                self.send_msg(res)
             if data['msg'] == "createFood":
                 # 随机生成一个食物，广播给所有蛇
                 res = {}
-                res['x'] = random.randint(0,59) * 20
-                res['y'] = random.randint(0,32) * 20
+                res['x'] = random.randint(0, WIDTH - 1) * BODY_SIZE
+                res['y'] = random.randint(0, HEIGHT - 1) * BODY_SIZE
                 res['msg'] = 'createFood'
                 self.send_msg(res)
             # self.snake['direction'] = data['direction']

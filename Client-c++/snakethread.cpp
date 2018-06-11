@@ -9,12 +9,17 @@
 #include "snakethread.h"
 
 SnakeThread::SnakeThread(QWidget *w, QObject *parent)
-    : QThread(parent)
+    : QObject(parent)
 {
     this->mainWindow = w;
     this->snake = new Snake(mainWindow);
+    this->snake->addLength();
+    this->snake->addLength();
+    this->snake->addLength();
+    this->snake->addLength();
+    this->snake->setSnakeName("");
     snake->getHead()->move(200,500);
-    timerId = this->startTimer(snake->getSpeed());
+    timerId = this->startTimer(500);
     this->flag = 80;
 }
 
@@ -38,12 +43,7 @@ SnakeThread::~SnakeThread()
 
 }
 
-void SnakeThread::run()
-{
-
-}
-
-void SnakeThread::timerEvent(QTimerEvent *e)
+void SnakeThread::timerEvent(QTimerEvent *)
 {
     //每隔一段时间让蛇前进一次
     snake->goAhead();

@@ -3,29 +3,34 @@
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
+//    this->speed = 20;
+    this->snakeId = 0;
+    this->snake = NULL;
+
+//    snake = new Snake(this);
+//    snake->addLength();
+//    snake->addLength();
+//    snake->addLength();
+//    snake->addLength();
+//    snake->move(200,200);
+//    isTimerStart = false;
+////    开启一个定时器，每隔speed毫秒执行一次timerEvent（）；
+//    timerID = this->startTimer(speed);
+//    isTimerStart = true;
+//    createFood();
+
     //重设主窗体大小。
     this->move(0,0);
     this->resize(1200,660);
-    this->speed = 20;
-    this->snakeId = 0;
-
-    snake = new Snake(this);
-    isTimerStart = false;
-    //开启一个定时器，每隔speed毫秒执行一次timerEvent（）；
-    timerID = this->startTimer(speed);
-    isTimerStart = true;
-//    createFood();
     this->food = NULL;
 
     SnakeThread * st = new SnakeThread(this);
     threads.append(st);
-    st->start();
 
     // 启动网络、网络收到的数据，在主类中处理
     m_pNetWork = new NetWork(this);
     connect(m_pNetWork,SIGNAL(sig_socketReceived(QJsonObject)),this,SLOT(slot_receiveData(QJsonObject)));
     m_pNetWork->startup();
-
 }
 
 void Widget::die()
@@ -38,10 +43,10 @@ void Widget::createFood(int x, int y)
 {
     qDebug()<<"create food !";
     //通过从网络收到的坐标生成食物。
-    food = new SnakeBody(this);
+    if(food == NULL)
+        food = new SnakeBody(this);
     //把食物移动到我们生成的坐标上。
     food->move(x,y);
-
 }
 
 void Widget::eatOrDeath()
@@ -78,11 +83,12 @@ void Widget::eatOrDeath()
     //校验蛇头和食物坐标，是否重合，
     if( food != NULL && food->pos() == head->pos()){
         snake->addLength();
-        delete food;
-        food = NULL;
+//        delete food;
+//        food = NULL;
 //        this->createFood();
         QJsonObject jsonObj;
-        jsonObj.insert("msg","createFood");
+        jsonObj.insert("msg","eatFood");
+        jsonObj.insert("id",this->snakeId);
         this->m_pNetWork->slot_socketSend(jsonObj);
     }
     //如果重合  addLength()；把当前食物删掉，生成新的食物
@@ -94,13 +100,15 @@ void Widget::restartTimer()
 {
     this->killTimer(timerID);
     isTimerStart = false;
-    timerID = this->startTimer(this->speed);
+    timerID = this->startTimer(this->snake->getSpeed());
     isTimerStart = true;
 }
 
 //只要有键盘输入，就会执行这个函数。
 void Widget::keyPressEvent(QKeyEvent *event)
 {
+    if(this->snake == NULL)
+        return ;
     //event->key();就是我们输入的按键
     switch(event->key()){
     case Qt::Key_Up :
@@ -126,37 +134,37 @@ void Widget::keyPressEvent(QKeyEvent *event)
             isTimerStart = false;
         }else
         {//继续
-            timerID = this->startTimer(speed);
+            timerID = this->startTimer(this->snake->getSpeed());
             isTimerStart = true;
         }
         break;
     case Qt::Key_1:
         if(isTimerStart){
-            this->speed = 1000;
+            this->snake->setSpeed(1000);
             this->restartTimer();
         }
         break;
     case Qt::Key_2:
         if(isTimerStart){
-            this->speed = 500;
+            this->snake->setSpeed(500);
             this->restartTimer();
         }
         break;
     case Qt::Key_3:
         if(isTimerStart){
-            this->speed = 200;
+            this->snake->setSpeed(200);
             this->restartTimer();
         }
         break;
     case Qt::Key_4:
         if(isTimerStart){
-            this->speed = 100;
+            this->snake->setSpeed(100);
             this->restartTimer();
         }
         break;
     case Qt::Key_5:
         if(isTimerStart){
-            this->speed = 20;
+            this->snake->setSpeed(20);
             this->restartTimer();
         }
         break;
@@ -165,16 +173,18 @@ void Widget::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void Widget::timerEvent(QTimerEvent *event)
+void Widget::timerEvent(QTimerEvent *)
 {
     //每隔一段时间让蛇前进一次
-    snake->goAhead();
+    this->snake->goAhead();
     eatOrDeath();
 }
 
 void Widget::closeEvent(QCloseEvent *)
 {
-    this->m_pNetWork->disconnect();
+    if(m_pNetWork != NULL){
+        this->m_pNetWork->disconnect();
+    }
 }
 
 Widget::~Widget()
@@ -187,22 +197,65 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
 {
     qDebug()<<"receive data!";
     QString msg = jsonObj.value("msg").toString();
-    //加入成功
+    // 加入成功
     if(msg == "join successful"){
-        int id = jsonObj.value("snake_id").toInt();
+        // 生成蛇
+        QJsonObject snakeObj = jsonObj.value("snake").toObject();
+        qDebug()<<snakeObj;
+        snakeId = snakeObj.value("id").toInt();
+
+        snake = new Snake(this);
+        snake->setSnakeId(snakeId);
+        snake->setSpeed(snakeObj.value("speed").toInt());
+        snake->setDirection((Snake::DIRECTION)snakeObj.value("direction").toInt());
+        QPoint pos(snakeObj.value("x").toInt(),snakeObj.value("y").toInt());
+        for(int i = 0; i < snakeObj.value("length").toInt(); i++){
+            snake->addLength();
+        }
+        snake->move(pos);
+        snake->setSnakeName(snakeObj.value("name").toString());
+
+
+//        snake->setSnakeName(snakeObj.value("name").toString());
+
+        isTimerStart = false;
+//        开启一个定时器，每隔speed毫秒执行一次timerEvent（）；
+        timerID = this->startTimer(snake->getSpeed());
+        isTimerStart = true;
+
+        // 如果这是第一条蛇，先生成一个食物
         int snakeNum = jsonObj.value("snake_num").toInt();
-        this-> snakeId = id;
         if(snakeNum == 1){
-            //如果这是第一条蛇，先生成一个食物
             //就去请求一个食物
             QJsonObject jsonObj;
             jsonObj.insert("msg","createFood");
             this->m_pNetWork->slot_socketSend(jsonObj);
         }
-    }
-    if(msg == "createFood"){
+    }else if(msg == "createFood"){
+        //食物被吃掉了，创建一个手机
         int x = jsonObj.value("x").toInt();
         int y = jsonObj.value("y").toInt();
         this->createFood(x,y);
+    }else if(msg == "addLength"){
+        //有蛇吃了食物，长度+1
+        int targetId = jsonObj.value("id").toInt();
+        foreach(SnakeThread * thread,threads){
+            if (thread->getSnake()->getSnakeId() == targetId)
+                thread->getSnake()->addLength();
+        }
+    }else if(msg == "new snake"){
+        SnakeThread * st = new SnakeThread(this);
+        threads.append(st);
+        QJsonObject snakeObj = jsonObj.value("snake").toObject();
+        st->getSnake()->setSnakeId(snakeObj.value("id").toInt());
+        QPoint pos(snakeObj.value("x").toInt(),snakeObj.value("y").toInt());
+        st->getSnake()->getHead()->move(pos);
+        st->getSnake()->setDirection((Snake::DIRECTION)snakeObj.value("direction").toInt() );
+        st->getSnake()->setSpeed(snakeObj.value("speed").toInt());
+        for(int i = 0; i < jsonObj.value("length").toInt(); i++){
+            st->getSnake()->addLength();
+        }
+        st->getSnake()->setSnakeName(jsonObj.value("name").toString());
     }
+
 }

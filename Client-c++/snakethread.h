@@ -7,14 +7,13 @@
  **************************************************************/
 #ifndef _SNAKETHREAD_H_ 
 #define _SNAKETHREAD_H_ 
-#include <QThread>
 #include <QWidget>
 #include <QTimerEvent>
 #include <snake.h>
 #include <QDebug>
 
 
-class SnakeThread:public QThread
+class SnakeThread:public QObject
 {
 public:
     SnakeThread(QWidget * w,QObject * parent = 0);
@@ -23,7 +22,6 @@ public:
     int getSpeed();
     ~SnakeThread();
 protected:
-    void run();
     void timerEvent(QTimerEvent * e);
 private:
     int timerId;//时间间隔。

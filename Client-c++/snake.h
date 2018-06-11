@@ -10,7 +10,7 @@ class Snake : public QWidget
 {
     Q_OBJECT
 public:
-    enum DIRECTION{UP,DOWN,LEFT,RIGHT};
+    enum DIRECTION{UP=0,DOWN,LEFT,RIGHT};
     explicit Snake(QWidget *parent = 0);
     //设置蛇头节点
     void setHead(SnakeBody* );
@@ -30,10 +30,14 @@ public:
     void setSnakeName(const QString name);
     //获取蛇名
     QString getSnakeName();
+    //获取蛇名节点
+    QLabel * getSnakeNameLabel();
     //设置速度
     void setSpeed(const int speed);
     //获取速度
     int getSpeed();
+    void setSnakeId(int id);
+    int getSnakeId();
 signals:
 
 public slots:
@@ -44,6 +48,7 @@ private:
     QVector<SnakeBody *> snake_body;
     QLabel * nameLabel;
     int speed;
+    int id;
 
 };
 

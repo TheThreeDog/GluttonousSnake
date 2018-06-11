@@ -35,7 +35,6 @@ private:
     int snakeId;    //蛇自己的ID
     bool isTimerStart;
     SnakeBody * food;//食物
-    int speed;
     QVector<SnakeThread *> threads;
     NetWork * m_pNetWork;
 };

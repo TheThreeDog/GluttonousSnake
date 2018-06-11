@@ -5,11 +5,12 @@ Snake::Snake(QWidget *parent)
 {
     p = parent; //父控件指针赋值
     //生成初始的蛇头蛇身
-    this->addLength();
-    this->addLength();
-    this->addLength();
-    this->addLength();
+//    this->addLength();
+//    this->addLength();
+//    this->addLength();
+//    this->addLength();
     speed = 500;
+    dir = Snake::UP;
 }
 
 void Snake::setHead(SnakeBody *s)
@@ -63,6 +64,9 @@ void Snake::goAhead()
     case RIGHT:
         hh->bodyMove(hh->x()+hh->width(),hh->y());
         break;
+    default:
+        qDebug()<<"error !??!";
+        break;
     }
     //蛇身的移动
     for(int i = 1; i < snake_body.count();i++){
@@ -71,6 +75,7 @@ void Snake::goAhead()
     //每次蛇移动后，蛇名也要跟着动
     SnakeBody * h = this->getHead();
     nameLabel->move(h->x(),h->y()-nameLabel->height());
+
 }
 
 //蛇加长的函数！
@@ -87,6 +92,7 @@ void Snake::addLength()
         snake_body.append(h);
         //生成后要生成蛇名对应的文字
         nameLabel = new QLabel("小蛇",p);
+        nameLabel->show();
         nameLabel->resize(200,20);
         QFont font;
         font.setFamily("微软雅黑");
@@ -113,6 +119,11 @@ QString Snake::getSnakeName()
     return this->nameLabel->text();
 }
 
+QLabel* Snake::getSnakeNameLabel()
+{
+    return this->nameLabel;
+}
+
 void Snake::setSpeed(const int speed)
 {
     this->speed = speed;
@@ -121,6 +132,16 @@ void Snake::setSpeed(const int speed)
 int Snake::getSpeed()
 {
     return this->speed;
+}
+
+void Snake::setSnakeId(int id)
+{
+    this->id = id;
+}
+
+int Snake::getSnakeId()
+{
+    return this->id;
 }
 
 
