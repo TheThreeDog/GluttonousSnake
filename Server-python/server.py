@@ -38,7 +38,11 @@ class SnakeThread(threading.Thread,object):
         self.snake['speed'] = 500
         self.snake['name'] = '三级狗'
         SnakeThread.snakes[SnakeThread.snake_id] = self.snake
+        # 向新加入的客户端反馈新的蛇信息
         self.sock.sendall(json.dumps({"snake": self.snake,"msg":"join successful","snake_num":SnakeThread.snake_num}).encode())
+        # 向新加入的客户端返回当前棋局信息
+
+        # 向其他蛇发送新蛇的信息
         self.send_msg_without_self({"msg":"new snake","snake":self.snake})
 
     def send_msg(self,msg):
@@ -80,6 +84,8 @@ class SnakeThread(threading.Thread,object):
                 res['y'] = random.randint(0, HEIGHT - 1) * BODY_SIZE
                 res['msg'] = 'createFood'
                 self.send_msg(res)
+            if data['msg'] == "positions":
+                print(data['data'])
             # self.snake['direction'] = data['direction']
             # self.snake['name'] = data['name']
             # self.snake['speed'] = data['speed']

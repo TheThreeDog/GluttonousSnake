@@ -6,6 +6,7 @@ Widget::Widget(QWidget *parent)
 //    this->speed = 20;
     this->snakeId = 0;
     this->snake = NULL;
+    this->show();
 
 //    snake = new Snake(this);
 //    snake->addLength();
@@ -24,8 +25,9 @@ Widget::Widget(QWidget *parent)
     this->resize(1200,660);
     this->food = NULL;
 
-    SnakeThread * st = new SnakeThread(this);
-    threads.append(st);
+//    SnakeThread * st = new SnakeThread(this);
+//    st->getSnake()->setLength(4);
+//    threads.append(st);
 
     // 启动网络、网络收到的数据，在主类中处理
     m_pNetWork = new NetWork(this);
@@ -177,6 +179,12 @@ void Widget::timerEvent(QTimerEvent *)
 {
     //每隔一段时间让蛇前进一次
     this->snake->goAhead();
+    QJsonObject json;
+
+    json.insert("msg","positions");
+    json.insert("id",this->snake->getSnakeId());
+    json.insert("head",this->snake->getHead()->pos());
+    this->m_pNetWork->slot_socketSend(json);
     eatOrDeath();
 }
 
@@ -212,7 +220,7 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
         for(int i = 0; i < snakeObj.value("length").toInt(); i++){
             snake->addLength();
         }
-        snake->move(pos);
+        snake->getHead()->move(pos);
         snake->setSnakeName(snakeObj.value("name").toString());
 
 
@@ -244,6 +252,7 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
                 thread->getSnake()->addLength();
         }
     }else if(msg == "new snake"){
+        //有新蛇加入
         SnakeThread * st = new SnakeThread(this);
         threads.append(st);
         QJsonObject snakeObj = jsonObj.value("snake").toObject();
@@ -252,10 +261,7 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
         st->getSnake()->getHead()->move(pos);
         st->getSnake()->setDirection((Snake::DIRECTION)snakeObj.value("direction").toInt() );
         st->getSnake()->setSpeed(snakeObj.value("speed").toInt());
-        for(int i = 0; i < jsonObj.value("length").toInt(); i++){
-            st->getSnake()->addLength();
-        }
-        st->getSnake()->setSnakeName(jsonObj.value("name").toString());
+        st->getSnake()->setLength(snakeObj.value("length").toInt());
+        st->getSnake()->setSnakeName(snakeObj.value("name").toString());
     }
-
 }

@@ -36,8 +36,15 @@ public:
     void setSpeed(const int speed);
     //获取速度
     int getSpeed();
+    //设置蛇ID
     void setSnakeId(int id);
+    //获取蛇ID
     int getSnakeId();
+    //设置蛇的长度
+    void setLength(const int len);
+    //获取蛇的长度
+    int getLength();
+
 signals:
 
 public slots:

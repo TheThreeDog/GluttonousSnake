@@ -112,6 +112,7 @@ void Snake::addLength()
 void Snake::setSnakeName(const QString name)
 {
     this->nameLabel->setText(name);
+    this->nameLabel->show();
 }
 
 QString Snake::getSnakeName()
@@ -142,6 +143,20 @@ void Snake::setSnakeId(int id)
 int Snake::getSnakeId()
 {
     return this->id;
+}
+
+void Snake::setLength(const int len)
+{
+    if(len <= this->getLength())
+        return ;
+    for(int i = 0; i < len; i++){
+        this->addLength();
+    }
+}
+
+int Snake::getLength()
+{
+    return this->snake_body.count();
 }
 
 

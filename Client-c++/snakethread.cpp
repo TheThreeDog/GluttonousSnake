@@ -13,10 +13,7 @@ SnakeThread::SnakeThread(QWidget *w, QObject *parent)
 {
     this->mainWindow = w;
     this->snake = new Snake(mainWindow);
-    this->snake->addLength();
-    this->snake->addLength();
-    this->snake->addLength();
-    this->snake->addLength();
+    this->snake->setLength(4);
     this->snake->setSnakeName("");
     snake->getHead()->move(200,500);
     timerId = this->startTimer(500);
