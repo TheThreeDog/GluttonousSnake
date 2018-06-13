@@ -20,6 +20,31 @@ SnakeThread::SnakeThread(QWidget *w, QObject *parent)
     this->flag = 80;
 }
 
+//通过Json数据生成新蛇
+SnakeThread::SnakeThread(QJsonObject obj,QWidget * w,QObject * parent)
+    : QObject(parent)
+{
+    //此构造函数封装不好，严重依赖数据格式，造成耦合性很高。
+    this->mainWindow = w;
+    this->snake = new Snake(mainWindow);
+    this->snake->setLength(obj.value("length").toInt());
+    this->snake->setSnakeName(obj.value("name").toString());
+    this->snake->setDirection((Snake::DIRECTION)obj.value("direction").toInt());
+    this->snake->setSnakeId(obj.value("id").toInt());
+    this->snake->setSpeed(obj.value("speed").toInt());
+    QPoint pos(obj.value("x").toInt(),obj.value("y").toInt());
+    this->snake->getHead()->move(pos);
+    QJsonArray posArray = obj.value("positions").toArray();
+    for(int i = 0; i < posArray.count(); i++){
+        QJsonObject bodyObj = posArray.at(i).toObject();
+        int x = bodyObj.value("x").toInt();
+        int y = bodyObj.value("y").toInt();
+        this->snake->getSnake().at(i)->move(x,y);
+    }
+    timerId = this->startTimer(this->snake->getSpeed());
+    this->flag = 80;
+}
+
 Snake *SnakeThread::getSnake()
 {
     return this->snake;

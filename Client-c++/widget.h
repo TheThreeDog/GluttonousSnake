@@ -7,6 +7,7 @@
 #include <QTimerEvent>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QJsonArray>
 #include "snakethread.h"
 #include "network.h"
 

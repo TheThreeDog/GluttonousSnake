@@ -11,12 +11,17 @@
 #include <QTimerEvent>
 #include <snake.h>
 #include <QDebug>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QJsonArray>
 
 
 class SnakeThread:public QObject
 {
 public:
     SnakeThread(QWidget * w,QObject * parent = 0);
+    //通过Json数据生成新蛇
+    SnakeThread(QJsonObject obj,QWidget * w,QObject * parent = 0);
     Snake * getSnake();
     void setSpeed(const int s);
     int getSpeed();

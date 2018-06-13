@@ -13,11 +13,25 @@ BODY_SIZE = 20
 WIDTH = 1200//20
 HEIGHT = 660//20
 
+
+def recv_sockdata(the_socket):
+    total_data = ""
+    while True:
+        data = the_socket.recv(1024).decode()
+        if "END" in data:
+            total_data += data[:data.index("END")]
+            break
+        total_data+=data
+    return total_data
+
+
 # 创建蛇线程
 class SnakeThread(threading.Thread,object):
     snakes = {}
     snake_num = 0
     snake_id = 0
+    food_x = 0
+    food_y = 0
     socks = []
 
     def __init__(self,sock,addr):
@@ -37,20 +51,28 @@ class SnakeThread(threading.Thread,object):
         self.snake['length'] = 4
         self.snake['speed'] = 500
         self.snake['name'] = '三级狗'
+        self.snake['positions'] = []
         SnakeThread.snakes[SnakeThread.snake_id] = self.snake
-        # 向新加入的客户端反馈新的蛇信息
-        self.sock.sendall(json.dumps({"snake": self.snake,"msg":"join successful","snake_num":SnakeThread.snake_num}).encode())
-        # 向新加入的客户端返回当前棋局信息
+        # 向新加入的客户端反馈新的蛇自己的信息 同时向新加入的客户端返回当前游戏中所有蛇的信息 食物信息
+        self.sock.sendall(json.dumps({
+            "snake": self.snake,
+            "msg":"join successful",
+            "snake_num":SnakeThread.snake_num,
+            "all_snakes":SnakeThread.snakes,
+            "food_x": SnakeThread.food_x,
+            "food_y": SnakeThread.food_y
+        }).encode())
 
+        # self.sock.sendall(json.dumps({'snakes':"snakes",'msg':'snakes'}).encode())
         # 向其他蛇发送新蛇的信息
-        self.send_msg_without_self({"msg":"new snake","snake":self.snake})
+        self.broadcast_msg_without_self({"msg":"newSnake","snake":self.snake})
 
-    def send_msg(self,msg):
+    def broadcast_msg(self,msg):
         for sock in SnakeThread.socks:
             # print(str(time.time())+"  :  "+str(msg))
             sock.sendall(json.dumps(msg).encode())
 
-    def send_msg_without_self(self,msg):
+    def broadcast_msg_without_self(self,msg):
         for sock in SnakeThread.socks:
             # print(str(time.time())+"  :  "+str(msg))
             if sock == self.sock:
@@ -59,37 +81,41 @@ class SnakeThread(threading.Thread,object):
 
     def recv_data(self):
         while True:
-            data = self.sock.recv(1024)
-            if data.decode() == 'exit':
+            data = json.loads(recv_sockdata(self.sock),encoding="utf-8")
+
+            if data['msg'] == 'exit':
                 break
-            print(data.decode())
-            data = eval(data.decode())
-            print(data)
+            if data['msg'] != 'positions':
+                print(data)
             if data['msg'] == "eatFood":
                 # 给其他蛇发送蛇加长的消息
                 res_all = {}
                 res_all['msg'] = 'addLength'
-                res_all['id'] =data['id']
-                self.send_msg_without_self(res_all)
+                res_all['id'] = data['id']
+                self.broadcast_msg_without_self(res_all)
+                # 给记录的蛇加长：
+                SnakeThread.snakes[data['id']]['length'] += 1
                 # 随机生成一个食物，广播给所有蛇
                 res = {}
-                res['x'] = random.randint(0,WIDTH-1) * BODY_SIZE
-                res['y'] = random.randint(0,HEIGHT-1) * BODY_SIZE
+                res['x'] = SnakeThread.food_x = random.randint(0,WIDTH-1) * BODY_SIZE
+                res['y'] = SnakeThread.food_y = random.randint(0,HEIGHT-1) * BODY_SIZE
                 res['msg'] = 'createFood'
-                self.send_msg(res)
+                self.broadcast_msg(res)
             if data['msg'] == "createFood":
                 # 随机生成一个食物，广播给所有蛇
                 res = {}
-                res['x'] = random.randint(0, WIDTH - 1) * BODY_SIZE
-                res['y'] = random.randint(0, HEIGHT - 1) * BODY_SIZE
+                res['x'] = SnakeThread.food_x = random.randint(0, WIDTH - 1) * BODY_SIZE
+                res['y'] = SnakeThread.food_y = random.randint(0, HEIGHT - 1) * BODY_SIZE
                 res['msg'] = 'createFood'
-                self.send_msg(res)
+                self.broadcast_msg(res)
             if data['msg'] == "positions":
-                print(data['data'])
+                snake_id = data['id']
+                SnakeThread.snakes[snake_id]['positions'] = data['positions']
+                SnakeThread.snakes[snake_id]['x'] = data['positions'][0]['x']
+                SnakeThread.snakes[snake_id]['y'] = data['positions'][0]['y']
             # self.snake['direction'] = data['direction']
             # self.snake['name'] = data['name']
             # self.snake['speed'] = data['speed']
-
 
     def delete_snake(self):
         self.sock.close()
@@ -97,16 +123,12 @@ class SnakeThread(threading.Thread,object):
         SnakeThread.snakes.pop(self.snake['id'])
         SnakeThread.snake_num -= 1
 
-
     def run(self):
         print('Accept new connection from {}...'.format(addr))
         # 创建蛇并存在列表中
         self.add_snake()
         # 死循环读入数据并处理
-        try:
-            self.recv_data()
-        except:
-            pass
+        self.recv_data()
         # 退出循环后，执行关闭线程处理
         self.delete_snake()
         print('Connection from {} closed.'.format(addr))

@@ -40,7 +40,7 @@ void NetWork::slot_socketSend(const QJsonObject &jsonData)
 {
     static QMutex mutex;
     QMutexLocker locker(&mutex);
-    QByteArray byteData = QJsonDocument(jsonData).toJson();
+    QByteArray byteData = QJsonDocument(jsonData).toJson()+" END";
 
     if(m_pTcpSocket->isOpen()){
         //        m_pTcpSocket->write(QByteArray::number(byteData.size()),sizeof(qint64));
@@ -57,7 +57,7 @@ void NetWork::slot_socketRead()
 //    static qint64 size = 0;
     while(1){
         QByteArray data = m_pTcpSocket->readAll();
-        qDebug()<<data;
+//        qDebug()<<data;
         QJsonParseError json_error;
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data,&json_error);
         if(jsonDoc.isNull())

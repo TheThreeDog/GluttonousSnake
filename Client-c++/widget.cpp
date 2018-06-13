@@ -43,7 +43,7 @@ void Widget::die()
 
 void Widget::createFood(int x, int y)
 {
-    qDebug()<<"create food !";
+//    qDebug()<<"create food !";
     //通过从网络收到的坐标生成食物。
     if(food == NULL)
         food = new SnakeBody(this);
@@ -180,10 +180,16 @@ void Widget::timerEvent(QTimerEvent *)
     //每隔一段时间让蛇前进一次
     this->snake->goAhead();
     QJsonObject json;
-
     json.insert("msg","positions");
     json.insert("id",this->snake->getSnakeId());
-    json.insert("head",this->snake->getHead()->pos());
+    QJsonArray positions;
+    foreach(SnakeBody * body,this->snake->getSnake()){
+        QJsonObject posJson;
+        posJson.insert("x",body->x());
+        posJson.insert("y",body->y());
+        positions.append(posJson);
+    }
+    json.insert("positions",positions);
     this->m_pNetWork->slot_socketSend(json);
     eatOrDeath();
 }
@@ -191,6 +197,9 @@ void Widget::timerEvent(QTimerEvent *)
 void Widget::closeEvent(QCloseEvent *)
 {
     if(m_pNetWork != NULL){
+        QJsonObject obj;
+        obj.insert("msg","exit");
+        this->m_pNetWork->slot_socketSend(obj);
         this->m_pNetWork->disconnect();
     }
 }
@@ -203,15 +212,14 @@ Widget::~Widget()
 //接收到数据的处理
 void Widget::slot_receiveData(QJsonObject jsonObj)
 {
-    qDebug()<<"receive data!";
+//    qDebug()<<"receive data!";
     QString msg = jsonObj.value("msg").toString();
     // 加入成功
     if(msg == "join successful"){
         // 生成蛇
         QJsonObject snakeObj = jsonObj.value("snake").toObject();
-        qDebug()<<snakeObj;
+//        qDebug()<<snakeObj;
         snakeId = snakeObj.value("id").toInt();
-
         snake = new Snake(this);
         snake->setSnakeId(snakeId);
         snake->setSpeed(snakeObj.value("speed").toInt());
@@ -223,14 +231,9 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
         snake->getHead()->move(pos);
         snake->setSnakeName(snakeObj.value("name").toString());
 
-
-//        snake->setSnakeName(snakeObj.value("name").toString());
-
         isTimerStart = false;
-//        开启一个定时器，每隔speed毫秒执行一次timerEvent（）；
         timerID = this->startTimer(snake->getSpeed());
         isTimerStart = true;
-
         // 如果这是第一条蛇，先生成一个食物
         int snakeNum = jsonObj.value("snake_num").toInt();
         if(snakeNum == 1){
@@ -238,30 +241,38 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
             QJsonObject jsonObj;
             jsonObj.insert("msg","createFood");
             this->m_pNetWork->slot_socketSend(jsonObj);
+        }else{
+            //否则的话就获取当前的食物的位置
+            int x = jsonObj.value("food_x").toInt();
+            int y = jsonObj.value("food_y").toInt();
+            this->createFood(x,y);
         }
+        QJsonObject allSnakesObj = jsonObj.value("all_snakes").toObject();
+        foreach(QString s_id,allSnakesObj.keys()){
+            int id = s_id.toInt();
+            if( id == this->snakeId )//自己不做渲染
+                continue;
+            QJsonObject obj = allSnakesObj.value(s_id).toObject();
+            SnakeThread * st = new SnakeThread(obj,this);//通过Json生成新蛇
+            threads.append(st);
+        }
+//        qDebug()<<allSnakesObj;
     }else if(msg == "createFood"){
-        //食物被吃掉了，创建一个手机
+        //食物被吃掉了，创建一个新的
         int x = jsonObj.value("x").toInt();
         int y = jsonObj.value("y").toInt();
         this->createFood(x,y);
     }else if(msg == "addLength"){
-        //有蛇吃了食物，长度+1
+        //有蛇吃了食物，对应的蛇长度+1
         int targetId = jsonObj.value("id").toInt();
         foreach(SnakeThread * thread,threads){
             if (thread->getSnake()->getSnakeId() == targetId)
                 thread->getSnake()->addLength();
         }
-    }else if(msg == "new snake"){
+    }else if(msg == "newSnake"){
         //有新蛇加入
-        SnakeThread * st = new SnakeThread(this);
-        threads.append(st);
         QJsonObject snakeObj = jsonObj.value("snake").toObject();
-        st->getSnake()->setSnakeId(snakeObj.value("id").toInt());
-        QPoint pos(snakeObj.value("x").toInt(),snakeObj.value("y").toInt());
-        st->getSnake()->getHead()->move(pos);
-        st->getSnake()->setDirection((Snake::DIRECTION)snakeObj.value("direction").toInt() );
-        st->getSnake()->setSpeed(snakeObj.value("speed").toInt());
-        st->getSnake()->setLength(snakeObj.value("length").toInt());
-        st->getSnake()->setSnakeName(snakeObj.value("name").toString());
+        SnakeThread * st = new SnakeThread(snakeObj,this);
+        threads.append(st);
     }
 }
