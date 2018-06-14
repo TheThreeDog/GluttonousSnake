@@ -25,6 +25,7 @@ public:
     Snake * getSnake();
     void setSpeed(const int s);
     int getSpeed();
+    void die();//蛇死亡
     ~SnakeThread();
 protected:
     void timerEvent(QTimerEvent * e);

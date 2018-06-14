@@ -38,6 +38,7 @@ private:
     SnakeBody * food;//食物
     QVector<SnakeThread *> threads;
     NetWork * m_pNetWork;
+    bool isAlive;
 };
 
 #endif // WIDGET_H

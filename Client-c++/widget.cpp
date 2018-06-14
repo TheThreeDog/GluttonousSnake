@@ -35,10 +35,18 @@ Widget::Widget(QWidget *parent)
     m_pNetWork->startup();
 }
 
+//死亡、游戏结束
 void Widget::die()
 {
     this->killTimer(timerID);
     isTimerStart = false;
+    QJsonObject json;
+    json.insert("msg","die");
+    json.insert("id",this->snake->getSnakeId());
+    m_pNetWork->slot_socketSend(json);
+    delete this->snake;
+    this->snake = NULL;
+    this->isAlive = false;
 }
 
 void Widget::createFood(int x, int y)
@@ -53,6 +61,9 @@ void Widget::createFood(int x, int y)
 
 void Widget::eatOrDeath()
 {
+    //如果蛇已经死了
+    if(this->snake == NULL || this->isAlive == false)
+        return ;
     //先获取蛇头指针
     SnakeBody * head = snake->getSnake().at(0);
     //判断是不是越界
@@ -71,23 +82,24 @@ void Widget::eatOrDeath()
         foreach(SnakeBody * body , snake->getSnake()){
             if(body->pos() == head->pos()){
                 die();
+                return ;//蛇死了就直接返回
             }
         }
     }
     //判断有没有自杀
     //遍历每一个蛇身，如果有蛇身的坐标和蛇头重合，说明自杀
+    if(this->snake == NULL || this->isAlive == false)
+        return ;
     for(int i = 1;i < snake->getSnake().count();i++){
         if(snake->getSnake().at(i)->pos() == head->pos()){
             die();
+            return ;
         }
     }
     //判断有没有吃到食物
     //校验蛇头和食物坐标，是否重合，
     if( food != NULL && food->pos() == head->pos()){
         snake->addLength();
-//        delete food;
-//        food = NULL;
-//        this->createFood();
         QJsonObject jsonObj;
         jsonObj.insert("msg","eatFood");
         jsonObj.insert("id",this->snakeId);
@@ -100,6 +112,8 @@ void Widget::eatOrDeath()
 //重启定时器
 void Widget::restartTimer()
 {
+    if(this->snake == NULL || this->isAlive == false)
+        return ;
     this->killTimer(timerID);
     isTimerStart = false;
     timerID = this->startTimer(this->snake->getSpeed());
@@ -109,7 +123,7 @@ void Widget::restartTimer()
 //只要有键盘输入，就会执行这个函数。
 void Widget::keyPressEvent(QKeyEvent *event)
 {
-    if(this->snake == NULL)
+    if(this->snake == NULL || this->isAlive == false)
         return ;
     //event->key();就是我们输入的按键
     switch(event->key()){
@@ -221,6 +235,7 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
 //        qDebug()<<snakeObj;
         snakeId = snakeObj.value("id").toInt();
         snake = new Snake(this);
+        this->isAlive = true;
         snake->setSnakeId(snakeId);
         snake->setSpeed(snakeObj.value("speed").toInt());
         snake->setDirection((Snake::DIRECTION)snakeObj.value("direction").toInt());
@@ -274,5 +289,17 @@ void Widget::slot_receiveData(QJsonObject jsonObj)
         QJsonObject snakeObj = jsonObj.value("snake").toObject();
         SnakeThread * st = new SnakeThread(snakeObj,this);
         threads.append(st);
+        //新蛇加入后重启一下定时器，各客户端同步
+        this->restartTimer();
+    }else if(msg == "die"){
+        int targetId = jsonObj.value("id").toInt();
+        foreach(SnakeThread * thread,threads){
+            if (thread->getSnake()->getSnakeId() == targetId){
+                thread->die();
+                threads.removeOne(thread);
+                delete thread;
+                thread = NULL;
+            }
+        }
     }
 }

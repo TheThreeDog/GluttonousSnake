@@ -44,6 +44,8 @@ public:
     void setLength(const int len);
     //获取蛇的长度
     int getLength();
+    //析构函数，销毁蛇的时候，销毁所有的蛇身
+    ~Snake();
 
 signals:
 

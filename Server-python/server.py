@@ -113,6 +113,11 @@ class SnakeThread(threading.Thread,object):
                 SnakeThread.snakes[snake_id]['positions'] = data['positions']
                 SnakeThread.snakes[snake_id]['x'] = data['positions'][0]['x']
                 SnakeThread.snakes[snake_id]['y'] = data['positions'][0]['y']
+            if data['msg'] == 'die':
+                # 蛇如果死了，清除socket  退出循环
+                snake_id = data['id']
+                SnakeThread.snakes.pop(snake_id)
+                self.broadcast_msg_without_self({"id":snake_id,"msg":"die"})
             # self.snake['direction'] = data['direction']
             # self.snake['name'] = data['name']
             # self.snake['speed'] = data['speed']
@@ -120,7 +125,8 @@ class SnakeThread(threading.Thread,object):
     def delete_snake(self):
         self.sock.close()
         SnakeThread.socks.remove(self.sock)
-        SnakeThread.snakes.pop(self.snake['id'])
+        if self.snake['id'] in SnakeThread.snakes.keys():
+            SnakeThread.snakes.pop(self.snake['id'])
         SnakeThread.snake_num -= 1
 
     def run(self):
@@ -128,7 +134,10 @@ class SnakeThread(threading.Thread,object):
         # 创建蛇并存在列表中
         self.add_snake()
         # 死循环读入数据并处理
-        self.recv_data()
+        try:
+            self.recv_data()
+        except Exception as e:
+            print(e) #有的客户端异常断开的情况
         # 退出循环后，执行关闭线程处理
         self.delete_snake()
         print('Connection from {} closed.'.format(addr))

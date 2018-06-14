@@ -159,6 +159,16 @@ int Snake::getLength()
     return this->snake_body.count();
 }
 
+Snake::~Snake()
+{
+    for(int i = this->snake_body.count()-1; i >= 0 ; i--){
+        delete snake_body.at(i);
+        snake_body.removeAt(i);
+        delete this->nameLabel;
+        this->nameLabel = NULL;
+    }
+}
+
 
 
 

@@ -60,6 +60,13 @@ int SnakeThread::getSpeed()
     return this->snake->getSpeed();
 }
 
+void SnakeThread::die()
+{
+    this->killTimer(this->timerId);
+    delete snake;
+    this->snake = NULL;
+}
+
 SnakeThread::~SnakeThread()
 {
 
